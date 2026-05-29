@@ -7,7 +7,6 @@ import time
 import signal
 
 from config import Config
-from influx import InfluxConnector
 from myair import MyAirConnector
 
 logging.basicConfig(format="%(levelname)s: %(message)s", level=logging.INFO)
@@ -32,30 +31,46 @@ async def main_loop(config):
 
     my_air_conf = config["resmed"]
     my_air = MyAirConnector(my_air_conf)
-    influx_conf = config["influx"]
-    influx_connector = InfluxConnector(
-        influx_conf["bucket"],
-        influx_conf["token"],
-        influx_conf["org"],
-        influx_conf["url"],
-        influx_conf["measurement"],
-    )
+
+    backend = str(main_conf.get("backend", "victoriametrics")).lower()
+    if backend in ("influx", "influxdb"):
+        from influx import InfluxConnector  # lazy: only needs influxdb-client in influx mode
+
+        influx_conf = config["influx"]
+        connector = InfluxConnector(
+            influx_conf["bucket"],
+            influx_conf["token"],
+            influx_conf["org"],
+            influx_conf["url"],
+            influx_conf["measurement"],
+        )
+        logging.info("Using InfluxDB backend.")
+    else:
+        from victoria import VictoriaConnector
+
+        vconf = config["victoria"]
+        connector = VictoriaConnector(
+            url=vconf["url"],
+            measurement=vconf["measurement"],
+            state_file=vconf.get("state_file"),
+        )
+        logging.info("Using VictoriaMetrics backend.")
 
     while True:
         try:
             logging.info("Starting data retrieval cycle.")
             to_time = datetime.now(timezone.utc)
-            from_time = influx_connector.get_last_recorded_time(
+            from_time = connector.get_last_recorded_time(
                 my_air_conf["max_days"], to_time
             )
 
             result = await my_air.get_samples(
-                last_report_time, from_time, to_time, influx_connector.measurement
+                last_report_time, from_time, to_time, connector.measurement
             )
 
             if result:
                 logging.info("New data found, adding to InfluxDB.")
-                influx_connector.add_samples(result[1])
+                connector.add_samples(result[1])
                 last_report_time = result[0]
             else:
                 logging.info("No new data to add.")

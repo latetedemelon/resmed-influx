@@ -1,38 +1,45 @@
 version: '3'
 services:
-  influxdb:
-    image: influxdb:2.0
-    environment:
-      - DOCKER_INFLUXDB_INIT_MODE=setup
-      - DOCKER_INFLUXDB_INIT_USERNAME=${INFLUX_USER}
-      - DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUX_PASSWORD}
-      - DOCKER_INFLUXDB_INIT_ORG=${INFLUX_ORG}
-      - DOCKER_INFLUXDB_INIT_BUCKET=${INFLUX_BUCKET}
-      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUX_TOKEN}
+  # Default backend for the unified stack. VictoriaMetrics speaks the InfluxDB
+  # line protocol, so the importer writes to it directly (provider=resmed).
+  victoriametrics:
+    image: victoriametrics/victoria-metrics:v1.103.0
+    ports:
+      - "8428:8428"
     volumes:
-      - ./influxdb-data:/var/lib/influxdb2
+      - ./victoriametrics:/victoria-metrics-data
+    command:
+      - '--storageDataPath=/victoria-metrics-data'
+      - '--influxSkipSingleField'
+      - '--retentionPeriod=100y'
+    restart: unless-stopped
 
   grafana:
     image: grafana/grafana:latest
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
     depends_on:
-      - influxdb
+      - victoriametrics
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-health}
+    ports:
+      - "3000:3000"
     volumes:
       - ./grafana-data:/var/lib/grafana
-      - ./grafana:/var/lib/grafana/dashboards
-      - ./grafana/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml
-
 
   resmed-influx:
-    build: 
+    build:
       context: .
     container_name: myAir
     depends_on:
-      - influxdb
+      - victoriametrics
+    # Put your filled-in config.toml in ./resmed/ (see template.config.toml).
+    # Defaults already point [main].backend = "victoriametrics" at the service above.
     volumes:
       - ./resmed:/app/
     restart: always
     mem_limit: 100m
-    stdin_open: false # Allows keeping the input stream open for troubleshooting
-    tty: false        # Allocates a pseudo-TTY to the container for troubleshooting
+    stdin_open: false
+    tty: false
+
+# NOTE: the bundled grafana/dashboard.json targets the legacy InfluxDB backend.
+# When using the VictoriaMetrics backend (default), use the PromQL dashboards
+# shipped with the unified platform (the Healthkit-influxdb-grafana hub).

@@ -5,7 +5,16 @@ region = "NA"                # Either NA (for North America) or EU (for Europe)
 # Max number of days of historical data to query. Note = app may end up downloading more days because resmed's API have a month granularity
 max_days = 365
 
+# --- Backend selection (see [main].backend) ---
+
+[victoria]
+# Used when [main].backend = "victoriametrics" (the default for the unified stack).
+url = "http://victoriametrics:8428"  # VictoriaMetrics base URL
+measurement = "cpap"                  # Measurement name; every series is also tagged provider=resmed
+state_file = "/app/resmed_state.json" # Tracks last imported timestamp (VM has no Flux to query it back)
+
 [influx]
+# Used when [main].backend = "influx".
 url = "http://localhost:8086"
 bucket = "Resmed"           # Name of bucket to use in influx db
 measurement = "cpap"        # Name of measurement
@@ -13,5 +22,6 @@ token = "super-secret-token"
 org = "your org in influx"
 
 [main]
+backend = "victoriametrics" # "victoriametrics" (default) or "influx"
 logverbosity = "INFO" # By increasing level of verbosity = FATAL, ERROR, WARNING, INFO, DEBUG
 loop_minutes = 60     # How often to pull data from resmed. 0 to pull only once
