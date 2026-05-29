@@ -1,3 +1,9 @@
+> **Part of the Personal Health Data Platform** (hub: `Healthkit-influxdb-grafana`).
+> This importer now supports a **VictoriaMetrics** backend (default; InfluxDB still available
+> via `[main].backend = "influx"`) and tags every series `provider=resmed`, so your CPAP data
+> can share one store and one Grafana with Apple, Fitbit, Google and Renpho. See the hub's
+> `docs/ARCHITECTURE.md` for the data conventions.
+
 # MyAir Resmed to InfluxDB
 
 Allows for importing [MyAir](https://myair.resmed.com/) data to [InfluxDB](https://www.influxdata.com/).
