@@ -42,4 +42,4 @@ services:
 
 # NOTE: the bundled grafana/dashboard.json targets the legacy InfluxDB backend.
 # When using the VictoriaMetrics backend (default), use the PromQL dashboards
-# shipped with the unified platform (the Healthkit-influxdb-grafana hub).
+# shipped with the unified platform (the health-influx-grafana hub).

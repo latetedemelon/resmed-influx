@@ -1,4 +1,4 @@
-> **Part of the Personal Health Data Platform** (hub: `Healthkit-influxdb-grafana`).
+> **Part of [health-influx-grafana](https://github.com/latetedemelon/health-influx-grafana)** — a self-hosted, multi-source personal health dashboard.
 > This importer now supports a **VictoriaMetrics** backend (default; InfluxDB still available
 > via `[main].backend = "influx"`) and tags every series `provider=resmed`, so your CPAP data
 > can share one store and one Grafana with Apple, Fitbit, Google and Renpho. See the hub's
